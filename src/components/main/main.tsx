@@ -1,10 +1,12 @@
 import { Feature, FeatureCompanion, FeatureRetainer } from '@/models/feature';
 import { Navigate, Route, Routes } from 'react-router';
-import { ReactNode, useState } from 'react';
+import { OwlbearBridge, OwlbearDefaultOptionsPayload } from '@/integrations/owlbear-bridge';
+import { ReactNode, useEffect, useState } from 'react';
 import { Sourcebook, SourcebookElementKind } from '@/models/sourcebook';
 import { Spin, notification } from 'antd';
 import { useDataManager, useHeroes, useHomebrewSourcebooks, useOptions, useSession } from '@/contexts/data-context';
 import { Ability } from '@/models/ability';
+import { AbilityData } from '@/data/ability-data';
 import { AbilityModal } from '@/components/modals/ability/ability-modal';
 import { AboutModal } from '@/components/modals/about/about-modal';
 import { Adventure } from '@/models/adventure';
@@ -73,6 +75,8 @@ import { MonsterGroup } from '@/models/monster-group';
 import { MonsterModal } from '@/components/modals/monster/monster-modal';
 import { Montage } from '@/models/montage';
 import { Negotiation } from '@/models/negotiation';
+import { Options } from '@/models/options';
+import { PanelWidth } from '@/enums/panel-width';
 import { PartyModal } from '@/components/modals/party/party-modal';
 import { Perk } from '@/models/perk';
 import { PlayerViewModal } from '@/components/modals/player-view/player-view-modal';
@@ -131,6 +135,26 @@ export const Main = (props: Props) => {
 	const [ spinning, setSpinning ] = useState(false);
 
 	useErrorListener(event => setErrors([ ...errors, event ]));
+
+	useEffect(() => {
+		return OwlbearBridge.listenForExtensionMessages({
+			onApplyDefaultOptions: payload => {
+				const nextOptions = applyOwlbearDefaultOptions(options, payload);
+				if (!nextOptions) {
+					return;
+				}
+
+				dataManager
+					.saveOptions(nextOptions)
+					.catch(error => {
+						console.error('Unable to apply Owlbear extension defaults.', error);
+					});
+			},
+			onReject: event => {
+				console.warn('Ignored Owlbear extension bridge message.', event);
+			}
+		});
+	}, [ dataManager, options ]);
 
 	// #region Persistence
 
@@ -1977,3 +2001,49 @@ export const Main = (props: Props) => {
 		</ErrorBoundary>
 	);
 };
+
+function applyOwlbearDefaultOptions(
+	currentOptions: Options,
+	payload: OwlbearDefaultOptionsPayload
+): Options | null {
+	const nextOptions = Utils.copy(currentOptions);
+	let changed = false;
+
+	if (payload.shownStandardAbilities) {
+		const shownStandardAbilities = payload.shownStandardAbilities === 'all'
+			? AbilityData.standardAbilities.map(ability => ability.id)
+			: payload.shownStandardAbilities;
+
+		if (!arraysEqual(nextOptions.shownStandardAbilities, shownStandardAbilities)) {
+			nextOptions.shownStandardAbilities = shownStandardAbilities;
+			changed = true;
+		}
+	}
+
+	if (
+		payload.compactView !== undefined &&
+		nextOptions.compactView !== payload.compactView
+	) {
+		nextOptions.compactView = payload.compactView;
+		changed = true;
+	}
+
+	if (
+		payload.abilityWidth !== undefined &&
+		isPanelWidth(payload.abilityWidth) &&
+		nextOptions.abilityWidth !== payload.abilityWidth
+	) {
+		nextOptions.abilityWidth = payload.abilityWidth;
+		changed = true;
+	}
+
+	return changed ? nextOptions : null;
+}
+
+function isPanelWidth(value: string): value is PanelWidth {
+	return Object.values(PanelWidth).includes(value as PanelWidth);
+}
+
+function arraysEqual(left: string[], right: string[]): boolean {
+	return left.length === right.length && left.every((value, index) => value === right[index]);
+}

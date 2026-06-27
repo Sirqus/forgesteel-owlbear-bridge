@@ -44,6 +44,7 @@ export const AbilityModal = (props: Props) => {
 	const hasCost = props.ability.cost !== 'signature';
 	const hasRange = props.ability.distance.some(d => ![ AbilityDistanceType.Self, AbilityDistanceType.Special ].includes(d.type));
 	const hasDamage = AbilityLogic.usesDamage(props.ability);
+	const actorName = hero?.name || props.monster?.name || 'Unknown Actor';
 
 	const getCharacteristic = (ch: Characteristic) => {
 		if (hero) {
@@ -217,6 +218,8 @@ export const AbilityModal = (props: Props) => {
 									]}
 									rollState={rollState}
 									hero={null}
+									actorName={actorName}
+									rollLabel={props.ability.name}
 									onRollStateChange={setRollState}
 									onRoll={setTier}
 								/>

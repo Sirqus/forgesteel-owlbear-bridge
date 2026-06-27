@@ -27,6 +27,7 @@ export const RollModal = (props: Props) => {
 	const warnings: { label: string, text: string }[] = [];
 	let characteristicBonus = 0;
 	let saveBonus = 0;
+	const actorName = props.hero?.name || 'Unknown Actor';
 
 	if (props.characteristics && props.hero) {
 		if (props.characteristics.some(ch => [ Characteristic.Might, Characteristic.Agility ].includes(ch))) {
@@ -74,7 +75,15 @@ export const RollModal = (props: Props) => {
 							}
 							<NumberSpin style={{ width: '150px' }} label='Modifier' value={modifier} onChange={setModifier} />
 						</Flex>
-						<DieRollPanel type='Power Roll' modifiers={[ characteristicBonus, modifier ]} rollState={rollState} hero={props.hero} onRollStateChange={setRollState} />
+						<DieRollPanel
+							type='Power Roll'
+							modifiers={[ characteristicBonus, modifier ]}
+							rollState={rollState}
+							hero={props.hero}
+							actorName={actorName}
+							rollLabel='Power Roll'
+							onRollStateChange={setRollState}
+						/>
 						<Expander title='Rules'>
 							<HeaderText>Test Results</HeaderText>
 							<table>
@@ -119,7 +128,15 @@ export const RollModal = (props: Props) => {
 			case 'Saving Throw':
 				return (
 					<>
-						<DieRollPanel type='Saving Throw' modifiers={[ saveBonus ]} rollState={rollState} hero={props.hero} onRollStateChange={setRollState} />
+						<DieRollPanel
+							type='Saving Throw'
+							modifiers={[ saveBonus ]}
+							rollState={rollState}
+							hero={props.hero}
+							actorName={actorName}
+							rollLabel='Saving Throw'
+							onRollStateChange={setRollState}
+						/>
 					</>
 				);
 		}

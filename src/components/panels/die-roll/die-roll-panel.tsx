@@ -8,6 +8,7 @@ import { Hero } from '@/models/hero';
 import { HeroLogic } from '@/logic/hero-logic';
 import { HistogramPanel } from '@/components/panels/histogram/histogram-panel';
 import { Modal } from '@/components/modals/modal/modal';
+import { OwlbearBridge } from '@/integrations/owlbear-bridge';
 import { Random } from '@/utils/random';
 import { RollLogic } from '@/logic/roll-logic';
 import { RollState } from '@/enums/roll-state';
@@ -19,6 +20,8 @@ interface Props {
 	modifiers: number[];
 	rollState: RollState;
 	hero: Hero | null;
+	actorName?: string;
+	rollLabel?: string;
 	onRollStateChange: (value: RollState) => void;
 	onRoll?: (tier: number) => void;
 }
@@ -41,6 +44,13 @@ export const DieRollPanel = (props: Props) => {
 
 		setTierResult(rolls, props.rollState);
 		setResults(rolls);
+		OwlbearBridge.sendRollResult({
+			actorName: props.actorName || props.hero?.name || 'Forge Steel',
+			label: props.rollLabel || props.type,
+			formula: getFormula(props.type, props.modifiers, props.rollState),
+			total: getTotal(rolls, props.rollState),
+			breakdown: getBreakdown(rolls, props.rollState)
+		});
 	};
 
 	const setTierResult = (rolls: number[], rollState: RollState) => {
@@ -67,6 +77,47 @@ export const DieRollPanel = (props: Props) => {
 
 			props.onRoll(tier);
 		}
+	};
+
+	const getTotal = (rolls: number[], rollState: RollState) => {
+		return Collections.sum([ ...rolls, ...props.modifiers, RollLogic.getBonus(rollState, props.type) ], r => r);
+	};
+
+	const getFormula = (type: 'Power Roll' | 'Saving Throw', modifiers: number[], rollState: RollState) => {
+		const dice = type === 'Power Roll' ? '2d10' : '1d10';
+		const parts = [
+			...modifiers,
+			RollLogic.getBonus(rollState, type)
+		].filter(part => part !== 0);
+
+		if (parts.length === 0) {
+			return dice;
+		}
+
+		return [
+			dice,
+			...parts.map(part => `${part > 0 ? '+' : '-'} ${Math.abs(part)}`)
+		].join(' ');
+	};
+
+	const getBreakdown = (rolls: number[], rollState: RollState) => {
+		const parts = [
+			...rolls.map(roll => roll.toString()),
+			...props.modifiers
+				.filter(modifier => modifier !== 0)
+				.map(modifier => `${modifier >= 0 ? '+' : '-'} ${Math.abs(modifier)}`)
+		];
+
+		const bonus = RollLogic.getBonus(rollState, props.type);
+		if (bonus !== 0) {
+			parts.push(`${bonus >= 0 ? '+' : '-'} ${Math.abs(bonus)} ${bonus > 0 ? 'edge' : 'bane'}`);
+		}
+
+		const rollStateNote = props.type === 'Power Roll' && rollState !== RollState.Standard
+			? ` (${rollState})`
+			: '';
+
+		return `${parts.join(' ')} = ${getTotal(rolls, rollState)}${rollStateNote}`;
 	};
 
 	const getTierMessage = (rollState: RollState, type: string = 'Power Roll') => {

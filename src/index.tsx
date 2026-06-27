@@ -3,6 +3,7 @@ import { DataManagerProvider } from './contexts/data-context';
 import { ErrorBoundary } from '@/components/controls/error-boundary/error-boundary';
 import { HashRouter } from 'react-router';
 import { Main } from '@/components/main/main.tsx';
+import { OwlbearBridge } from '@/integrations/owlbear-bridge';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from '@/utils/initialize-theme';
@@ -48,6 +49,7 @@ root.render(
 							</StrictMode>
 						</ErrorBoundary>
 					);
+					OwlbearBridge.sendReady();
 				}}
 			/>
 		</StrictMode>
