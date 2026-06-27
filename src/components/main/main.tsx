@@ -139,6 +139,8 @@ export const Main = (props: Props) => {
 	useEffect(() => {
 		return OwlbearBridge.listenForExtensionMessages({
 			onApplyDefaultOptions: payload => {
+				applyOwlbearDefaultTheme(payload.themeMode);
+
 				const nextOptions = applyOwlbearDefaultOptions(options, payload);
 				if (!nextOptions) {
 					return;
@@ -2042,6 +2044,27 @@ function applyOwlbearDefaultOptions(
 
 function isPanelWidth(value: string): value is PanelWidth {
 	return Object.values(PanelWidth).includes(value as PanelWidth);
+}
+
+function applyOwlbearDefaultTheme(themeMode: OwlbearDefaultOptionsPayload['themeMode']): void {
+	if (!themeMode) {
+		return;
+	}
+
+	try {
+		let actualTheme: 'dark' | 'light';
+		if (themeMode === 'system') {
+			actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+		} else {
+			actualTheme = themeMode;
+		}
+
+		document.documentElement.setAttribute('data-theme', actualTheme);
+		document.documentElement.style.colorScheme = actualTheme;
+		localStorage.setItem('theme', themeMode);
+	} catch (error) {
+		console.warn('Unable to apply Owlbear extension theme default.', error);
+	}
 }
 
 function arraysEqual(left: string[], right: string[]): boolean {

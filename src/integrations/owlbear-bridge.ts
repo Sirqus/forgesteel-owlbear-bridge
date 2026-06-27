@@ -28,6 +28,10 @@ interface ForgeSteelRollPayload {
 	label: string;
 	formula: string;
 	total: number;
+	naturalTotal?: number;
+	tier?: 1 | 2 | 3;
+	baseTier?: 1 | 2 | 3;
+	rollState?: string;
 	breakdown?: string;
 	context?: ForgeSteelRollContext;
 }
@@ -58,6 +62,7 @@ export interface OwlbearDefaultOptionsPayload {
 	shownStandardAbilities?: 'all' | string[];
 	compactView?: boolean;
 	abilityWidth?: string;
+	themeMode?: 'light' | 'dark' | 'system';
 }
 
 interface ForgeSteelReadyMessage extends ForgeSteelBaseMessage {
@@ -243,6 +248,7 @@ export class OwlbearBridge {
 		const shownStandardAbilities = payload.shownStandardAbilities;
 		const compactView = payload.compactView;
 		const abilityWidth = payload.abilityWidth;
+		const themeMode = payload.themeMode;
 
 		return (
 			(
@@ -254,7 +260,13 @@ export class OwlbearBridge {
 				)
 			) &&
 			(compactView === undefined || typeof compactView === 'boolean') &&
-			(abilityWidth === undefined || typeof abilityWidth === 'string')
+			(abilityWidth === undefined || typeof abilityWidth === 'string') &&
+			(
+				themeMode === undefined ||
+				themeMode === 'light' ||
+				themeMode === 'dark' ||
+				themeMode === 'system'
+			)
 		);
 	};
 
