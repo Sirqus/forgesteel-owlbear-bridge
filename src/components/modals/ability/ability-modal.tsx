@@ -8,6 +8,8 @@ import { Characteristic } from '@/enums/characteristic';
 import { Collections } from '@/utils/collections';
 import { DieRollPanel } from '@/components/panels/die-roll/die-roll-panel';
 import { Expander } from '@/components/controls/expander/expander';
+import { ForgeSteelRollContext } from '@/integrations/owlbear-bridge';
+import { FormatLogic } from '@/logic/format-logic';
 import { HeaderText } from '@/components/controls/header-text/header-text';
 import { HeroLogic } from '@/logic/hero-logic';
 import { MarkdownEditor } from '@/components/controls/markdown/markdown';
@@ -183,6 +185,46 @@ export const AbilityModal = (props: Props) => {
 		};
 	};
 
+	const getRollContext = (): ForgeSteelRollContext => {
+		const creature = hero || props.monster;
+		const rollSection = props.ability.sections.find(section => section.type === 'roll');
+		const sections = props.ability.sections
+			.flatMap(section => {
+				switch (section.type) {
+					case 'text':
+						return [ { label: 'Effect', text: section.text } ];
+					case 'field':
+						return [ { label: section.name, text: section.effect } ];
+					default:
+						return [];
+				}
+			});
+
+		return {
+			kind: 'ability',
+			details: {
+				name: customization?.name || props.ability.name,
+				description: customization?.description || props.ability.description,
+				type: FormatLogic.getAbilityType(props.ability.type),
+				cost: props.ability.cost === 'signature' ? 'Signature' : props.ability.cost.toString(),
+				distance: props.ability.distance
+					.map(distance => AbilityLogic.getDistanceCreature(distance, props.ability, creature))
+					.join(' or '),
+				target: props.ability.target,
+				trigger: props.ability.type.trigger,
+				keywords: AbilityLogic.getKeywords(props.ability, hero),
+				sections: sections,
+				tiers: rollSection ?
+					[
+						{ tier: 1, text: rollSection.roll.tier1 },
+						{ tier: 2, text: rollSection.roll.tier2 },
+						{ tier: 3, text: rollSection.roll.tier3 }
+					]
+					: undefined
+			}
+		};
+	};
+
 	const getContent = () => {
 		switch (page) {
 			case 'Ability Card': {
@@ -220,6 +262,7 @@ export const AbilityModal = (props: Props) => {
 									hero={null}
 									actorName={actorName}
 									rollLabel={props.ability.name}
+									rollContext={getRollContext()}
 									onRollStateChange={setRollState}
 									onRoll={setTier}
 								/>

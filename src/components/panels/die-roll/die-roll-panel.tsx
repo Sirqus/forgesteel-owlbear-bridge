@@ -1,4 +1,5 @@
 import { Alert, Button, Drawer, Flex, Segmented, Slider, Statistic } from 'antd';
+import { ForgeSteelRollContext, OwlbearBridge } from '@/integrations/owlbear-bridge';
 import { ReactNode, useState } from 'react';
 import { BarChartOutlined } from '@ant-design/icons';
 import { Collections } from '@/utils/collections';
@@ -8,7 +9,6 @@ import { Hero } from '@/models/hero';
 import { HeroLogic } from '@/logic/hero-logic';
 import { HistogramPanel } from '@/components/panels/histogram/histogram-panel';
 import { Modal } from '@/components/modals/modal/modal';
-import { OwlbearBridge } from '@/integrations/owlbear-bridge';
 import { Random } from '@/utils/random';
 import { RollLogic } from '@/logic/roll-logic';
 import { RollState } from '@/enums/roll-state';
@@ -22,6 +22,7 @@ interface Props {
 	hero: Hero | null;
 	actorName?: string;
 	rollLabel?: string;
+	rollContext?: ForgeSteelRollContext;
 	onRollStateChange: (value: RollState) => void;
 	onRoll?: (tier: number) => void;
 }
@@ -49,7 +50,8 @@ export const DieRollPanel = (props: Props) => {
 			label: props.rollLabel || props.type,
 			formula: getFormula(props.type, props.modifiers, props.rollState),
 			total: getTotal(rolls, props.rollState),
-			breakdown: getBreakdown(rolls, props.rollState)
+			breakdown: getBreakdown(rolls, props.rollState),
+			context: props.rollContext
 		});
 	};
 

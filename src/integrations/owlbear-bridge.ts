@@ -29,6 +29,29 @@ interface ForgeSteelRollPayload {
 	formula: string;
 	total: number;
 	breakdown?: string;
+	context?: ForgeSteelRollContext;
+}
+
+export interface ForgeSteelRollContext {
+	kind?: 'ability' | 'characteristic' | 'savingThrow' | 'manual';
+	details?: {
+		name?: string;
+		description?: string;
+		type?: string;
+		cost?: string;
+		distance?: string;
+		target?: string;
+		trigger?: string;
+		keywords?: string[];
+		sections?: {
+			label: string;
+			text: string;
+		}[];
+		tiers?: {
+			tier: 1 | 2 | 3;
+			text: string;
+		}[];
+	};
 }
 
 export interface OwlbearDefaultOptionsPayload {
