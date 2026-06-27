@@ -192,9 +192,9 @@ export const AbilityModal = (props: Props) => {
 			.flatMap(section => {
 				switch (section.type) {
 					case 'text':
-						return [ { label: 'Effect', text: section.text } ];
+						return [ { label: 'Effect', text: AbilityLogic.getTextEffect(section.text, hero) } ];
 					case 'field':
-						return [ { label: section.name, text: section.effect } ];
+						return [ { label: section.name, text: AbilityLogic.getTextEffect(section.effect, hero) } ];
 					default:
 						return [];
 				}
@@ -216,9 +216,18 @@ export const AbilityModal = (props: Props) => {
 				sections: sections,
 				tiers: rollSection ?
 					[
-						{ tier: 1, text: rollSection.roll.tier1 },
-						{ tier: 2, text: rollSection.roll.tier2 },
-						{ tier: 3, text: rollSection.roll.tier3 }
+						{
+							tier: 1,
+							text: AbilityLogic.getTierEffectCreature(rollSection.roll.tier1, 1, props.ability, undefined, creature)
+						},
+						{
+							tier: 2,
+							text: AbilityLogic.getTierEffectCreature(rollSection.roll.tier2, 2, props.ability, undefined, creature)
+						},
+						{
+							tier: 3,
+							text: AbilityLogic.getTierEffectCreature(rollSection.roll.tier3, 3, props.ability, undefined, creature)
+						}
 					]
 					: undefined
 			}
