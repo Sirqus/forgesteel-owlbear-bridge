@@ -2,7 +2,8 @@ const SCHEMA_VERSION = 1;
 
 type ForgeSteelBridgeMessageType =
 	| 'FORGESTEEL_READY'
-	| 'FORGESTEEL_ROLL_RESULT';
+	| 'FORGESTEEL_ROLL_RESULT'
+	| 'FORGESTEEL_CHARACTER_SNAPSHOT';
 
 type OwlbearBridgeMessageType =
 	| 'OWLBEAR_APPLY_DEFAULT_OPTIONS';
@@ -38,6 +39,66 @@ interface ForgeSteelRollPayload {
 	rollState?: string;
 	breakdown?: string;
 	context?: ForgeSteelRollContext;
+}
+
+export interface ForgeSteelCharacterSnapshotPayload {
+	characterId: string;
+	characterName: string;
+	description?: string;
+	level?: number;
+	ancestryName?: string;
+	className?: string;
+	subclassName?: string;
+	stamina: {
+		current?: number;
+		max?: number;
+		temp?: number;
+		windedAt?: number;
+		deadAt?: number;
+	};
+	recoveries: {
+		current?: number;
+		max?: number;
+		value?: number;
+	};
+	characteristics: {
+		might?: number;
+		agility?: number;
+		reason?: number;
+		intuition?: number;
+		presence?: number;
+	};
+	movement: {
+		size?: string;
+		speed?: string;
+		stability?: number;
+		disengage?: number;
+	};
+	potencies: {
+		weak?: number;
+		average?: number;
+		strong?: number;
+	};
+	save: {
+		target?: number;
+		bonus?: number;
+	};
+	immunities: {
+		damageType: string;
+		value: number;
+	}[];
+	weaknesses: {
+		damageType: string;
+		value: number;
+	}[];
+	conditionImmunities: string[];
+	conditions: {
+		id: string;
+		type: string;
+		text: string;
+		ends: string;
+	}[];
+	updatedAt: string;
 }
 
 export interface ForgeSteelRollContext {
@@ -78,6 +139,11 @@ interface ForgeSteelRollResultMessage extends ForgeSteelBaseMessage {
 	payload: ForgeSteelRollPayload;
 }
 
+interface ForgeSteelCharacterSnapshotMessage extends ForgeSteelBaseMessage {
+	type: 'FORGESTEEL_CHARACTER_SNAPSHOT';
+	payload: ForgeSteelCharacterSnapshotPayload | null;
+}
+
 interface OwlbearApplyDefaultOptionsMessage extends OwlbearBaseMessage {
 	type: 'OWLBEAR_APPLY_DEFAULT_OPTIONS';
 	payload: OwlbearDefaultOptionsPayload;
@@ -85,7 +151,8 @@ interface OwlbearApplyDefaultOptionsMessage extends OwlbearBaseMessage {
 
 type ForgeSteelBridgeMessage =
 	| ForgeSteelReadyMessage
-	| ForgeSteelRollResultMessage;
+	| ForgeSteelRollResultMessage
+	| ForgeSteelCharacterSnapshotMessage;
 
 type OwlbearBridgeMessage =
 	| OwlbearApplyDefaultOptionsMessage;
@@ -114,6 +181,14 @@ export class OwlbearBridge {
 		OwlbearBridge.post({
 			...OwlbearBridge.createBaseMessage('FORGESTEEL_ROLL_RESULT'),
 			type: 'FORGESTEEL_ROLL_RESULT',
+			payload: payload
+		});
+	};
+
+	static sendCharacterSnapshot = (payload: ForgeSteelCharacterSnapshotPayload | null) => {
+		OwlbearBridge.post({
+			...OwlbearBridge.createBaseMessage('FORGESTEEL_CHARACTER_SNAPSHOT'),
+			type: 'FORGESTEEL_CHARACTER_SNAPSHOT',
 			payload: payload
 		});
 	};
@@ -239,7 +314,7 @@ export class OwlbearBridge {
 			return null;
 		}
 
-		return data as OwlbearApplyDefaultOptionsMessage;
+		return data as unknown as OwlbearApplyDefaultOptionsMessage;
 	};
 
 	private static isDefaultOptionsPayload = (payload: unknown): payload is OwlbearDefaultOptionsPayload => {

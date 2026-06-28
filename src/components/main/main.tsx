@@ -1,7 +1,7 @@
 import { Feature, FeatureCompanion, FeatureRetainer } from '@/models/feature';
-import { Navigate, Route, Routes } from 'react-router';
+import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { OwlbearBridge, OwlbearDefaultOptionsPayload } from '@/integrations/owlbear-bridge';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Sourcebook, SourcebookElementKind } from '@/models/sourcebook';
 import { Spin, notification } from 'antd';
 import { useDataManager, useHeroes, useHomebrewSourcebooks, useOptions, useSession } from '@/contexts/data-context';
@@ -104,6 +104,7 @@ import { Title } from '@/models/title';
 import { TransferPage } from '@/components/pages/transfer/transfer-page';
 import { Utils } from '@/utils/utils';
 import { WelcomePage } from '@/components/pages/welcome/welcome-page';
+import { buildOwlbearCharacterSnapshot } from '@/integrations/owlbear-character-snapshot';
 import localforage from 'localforage';
 import { useErrorListener } from '@/hooks/use-error-listener';
 import { useNavigation } from '@/hooks/use-navigation';
@@ -118,6 +119,7 @@ interface Props {
 
 export const Main = (props: Props) => {
 	const navigation = useNavigation();
+	const location = useLocation();
 	const [ notify, notifyContext ] = notification.useNotification();
 	const { triggerSyncOnChange } = useSyncStatus();
 	const options = useOptions();
@@ -133,6 +135,7 @@ export const Main = (props: Props) => {
 	const [ drawer, setDrawer ] = useState<ReactNode>(null);
 	const [ playerView, setPlayerView ] = useState<Window | null>(null);
 	const [ spinning, setSpinning ] = useState(false);
+	const lastOwlbearCharacterSnapshotRef = useRef<string>('');
 
 	useErrorListener(event => setErrors([ ...errors, event ]));
 
@@ -157,6 +160,22 @@ export const Main = (props: Props) => {
 			}
 		});
 	}, [ dataManager, options ]);
+
+	useEffect(() => {
+		const activeHeroID = getOwlbearActiveHeroID(location.pathname);
+		const hero = activeHeroID ? heroes.find(h => h.id === activeHeroID) : undefined;
+		const snapshot = hero
+			? buildOwlbearCharacterSnapshot(hero, SourcebookLogic.getSourcebooks(homebrewSourcebooks), options)
+			: null;
+		const signature = JSON.stringify(snapshot ? { ...snapshot, updatedAt: '' } : null);
+
+		if (signature === lastOwlbearCharacterSnapshotRef.current) {
+			return;
+		}
+
+		lastOwlbearCharacterSnapshotRef.current = signature;
+		OwlbearBridge.sendCharacterSnapshot(snapshot);
+	}, [ heroes, homebrewSourcebooks, location.pathname, options ]);
 
 	// #region Persistence
 
@@ -2065,6 +2084,11 @@ function applyOwlbearDefaultTheme(themeMode: OwlbearDefaultOptionsPayload['theme
 	} catch (error) {
 		console.warn('Unable to apply Owlbear extension theme default.', error);
 	}
+}
+
+function getOwlbearActiveHeroID(pathname: string): string | null {
+	const match = pathname.match(/^\/hero\/(?:view|edit|sheet)\/([^/]+)/);
+	return match ? decodeURIComponent(match[1]) : null;
 }
 
 function arraysEqual(left: string[], right: string[]): boolean {

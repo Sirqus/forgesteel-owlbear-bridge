@@ -1,6 +1,10 @@
 import { Plugin, defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+declare const process: {
+	env: Record<string, string | undefined>;
+};
+
 const BASE_PATH = normalizeBasePath(process.env.VITE_BASE_PATH ?? '/');
 
 // Base manifest template
