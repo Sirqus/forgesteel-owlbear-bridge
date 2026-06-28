@@ -59,3 +59,21 @@ npm run check
 ```
 
 If all is well, you can then create your pull request.
+
+## GitHub Pages
+
+This fork deploys with GitHub Actions. In GitHub, open **Settings -> Pages** and set **Build and deployment / Source** to **GitHub Actions**. Then push to `main` or run the `Deploy GitHub Pages` workflow manually.
+
+The static site files are generated in `dist` by:
+
+```
+npm run build
+```
+
+Do not publish the repository root as the Pages source. The root contains the React/Vite source files, not the built app. GitHub Pages should serve the generated `dist` artifact from the workflow.
+
+The deployed app URL is:
+
+```
+https://sirqus.github.io/forgesteel-owlbear-bridge/
+```

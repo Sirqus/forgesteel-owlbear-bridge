@@ -23,10 +23,11 @@ const swSelf = self as unknown as ServiceWorkerGlobalScope;
 // Cache version - will be unique for each build
 const CACHE_VERSION = new Date().toISOString().replace(/[:.]/g, '-');
 const CACHE_NAME = `forgesteel-${CACHE_VERSION}`;
+const APP_BASE = import.meta.env.BASE_URL;
 const STATIC_CACHE_URLS = [
-	'/',
-	'/index.html',
-	'/manifest.json'
+	APP_BASE,
+	`${APP_BASE}index.html`,
+	`${APP_BASE}manifest.json`
 ];
 
 // Install event - cache static assets
@@ -104,7 +105,7 @@ self.addEventListener('fetch', (event: Event) => {
 
 				// Fallback to main page for navigation
 				if (fetchEvent.request.destination === 'document') {
-					const fallback = await caches.match('/index.html');
+					const fallback = await caches.match(`${APP_BASE}index.html`);
 					if (fallback) {
 						return fallback;
 					}

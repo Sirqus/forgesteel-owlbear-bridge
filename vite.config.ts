@@ -1,28 +1,32 @@
 import { Plugin, defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+const BASE_PATH = normalizeBasePath(process.env.VITE_BASE_PATH ?? '/');
+
 // Base manifest template
-const BASE_MANIFEST = {
-	name: 'Forge Steel',
-	short_name: 'Forge Steel',
-	description: 'Heroes, monsters, encounters ... everything you need for Draw Steel.',
-	start_url: '/',
-	display: 'standalone',
-	background_color: '#ffffff',
-	theme_color: '#1890ff',
-	orientation: 'any',
-	scope: '/',
-	categories: [ 'games', 'entertainment', 'utilities' ],
-	lang: 'en',
-	dir: 'ltr'
+const getBaseManifest = () => {
+	return {
+		name: 'Forge Steel',
+		short_name: 'Forge Steel',
+		description: 'Heroes, monsters, encounters ... everything you need for Draw Steel.',
+		start_url: BASE_PATH,
+		display: 'standalone',
+		background_color: '#ffffff',
+		theme_color: '#1890ff',
+		orientation: 'any',
+		scope: BASE_PATH,
+		categories: [ 'games', 'entertainment', 'utilities' ],
+		lang: 'en',
+		dir: 'ltr'
+	};
 };
 
 // Generate manifest with icon paths
 const generateManifest = (shieldIconPath?: string) => {
-	const iconPath = shieldIconPath || '/src/assets/shield.png';
+	const iconPath = shieldIconPath || withBasePath('src/assets/shield.png');
 
 	return {
-		...BASE_MANIFEST,
+		...getBaseManifest(),
 		icons: [
 			{
 				src: iconPath,
@@ -50,7 +54,7 @@ const manifestPlugin = (): Plugin => {
 			);
 
 			if (shieldIcon) {
-				const manifest = generateManifest(`/${shieldIcon}`);
+				const manifest = generateManifest(withBasePath(shieldIcon));
 
 				// Write the manifest to the dist folder
 				this.emitFile({
@@ -65,7 +69,7 @@ const manifestPlugin = (): Plugin => {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-	base: '/',
+	base: BASE_PATH,
 	build: {
 		chunkSizeWarningLimit: 10000,
 		rollupOptions: {
@@ -132,7 +136,19 @@ export default defineConfig({
 	},
 	server: {
 		headers: {
-			'Service-Worker-Allowed': '/'
+			'Service-Worker-Allowed': BASE_PATH
 		}
 	}
 });
+
+function normalizeBasePath(path: string): string {
+	if (!path || path === '/') {
+		return '/';
+	}
+
+	return `/${path.replace(/^\/+|\/+$/g, '')}/`;
+}
+
+function withBasePath(path: string): string {
+	return `${BASE_PATH}${path.replace(/^\/+/g, '')}`;
+}

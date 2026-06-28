@@ -15,7 +15,7 @@ initializeTheme();
 // Register Service Worker for PWA functionality
 if ('serviceWorker' in navigator) {
 	window.addEventListener('load', () => {
-		navigator.serviceWorker.register('/sw.js')
+		navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`)
 			.catch(registrationError => {
 				console.error('SW registration failed: ', registrationError);
 			});
