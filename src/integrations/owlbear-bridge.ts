@@ -7,6 +7,10 @@ type ForgeSteelBridgeMessageType =
 type OwlbearBridgeMessageType =
 	| 'OWLBEAR_APPLY_DEFAULT_OPTIONS';
 
+type OwlbearBridgeSource =
+	| 'forgesteel-owlbear'
+	| 'forgesteel-owlbear-extension';
+
 interface ForgeSteelBaseMessage {
 	type: ForgeSteelBridgeMessageType;
 	schemaVersion: 1;
@@ -20,7 +24,7 @@ interface OwlbearBaseMessage {
 	schemaVersion: 1;
 	messageId: string;
 	timestamp: string;
-	source: 'forgesteel-owlbear';
+	source: OwlbearBridgeSource;
 }
 
 interface ForgeSteelRollPayload {
@@ -221,11 +225,9 @@ export class OwlbearBridge {
 			return null;
 		}
 
-		if (
-			data.source !== 'forgesteel-owlbear' ||
+		if (!OwlbearBridge.isOwlbearBridgeSource(data.source) ||
 			typeof data.messageId !== 'string' ||
-			typeof data.timestamp !== 'string'
-		) {
+			typeof data.timestamp !== 'string') {
 			return null;
 		}
 
@@ -268,6 +270,10 @@ export class OwlbearBridge {
 				themeMode === 'system'
 			)
 		);
+	};
+
+	private static isOwlbearBridgeSource = (source: unknown): source is OwlbearBridgeSource => {
+		return source === 'forgesteel-owlbear' || source === 'forgesteel-owlbear-extension';
 	};
 
 	private static isRecord = (value: unknown): value is Record<string, unknown> => {
