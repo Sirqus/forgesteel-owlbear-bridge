@@ -8,6 +8,8 @@ import { Characteristic } from '@/enums/characteristic';
 import { Collections } from '@/utils/collections';
 import { DieRollPanel } from '@/components/panels/die-roll/die-roll-panel';
 import { Expander } from '@/components/controls/expander/expander';
+import { ForgeSteelRollContext } from '@/integrations/owlbear-bridge';
+import { FormatLogic } from '@/logic/format-logic';
 import { HeaderText } from '@/components/controls/header-text/header-text';
 import { HeroLogic } from '@/logic/hero-logic';
 import { MarkdownEditor } from '@/components/controls/markdown/markdown';
@@ -44,6 +46,7 @@ export const AbilityModal = (props: Props) => {
 	const hasCost = props.ability.cost !== 'signature';
 	const hasRange = props.ability.distance.some(d => ![ AbilityDistanceType.Self, AbilityDistanceType.Special ].includes(d.type));
 	const hasDamage = AbilityLogic.usesDamage(props.ability);
+	const actorName = hero?.name || props.monster?.name || 'Unknown Actor';
 
 	const getCharacteristic = (ch: Characteristic) => {
 		if (hero) {
@@ -182,6 +185,55 @@ export const AbilityModal = (props: Props) => {
 		};
 	};
 
+	const getRollContext = (): ForgeSteelRollContext => {
+		const creature = hero || props.monster;
+		const rollSection = props.ability.sections.find(section => section.type === 'roll');
+		const sections = props.ability.sections
+			.flatMap(section => {
+				switch (section.type) {
+					case 'text':
+						return [ { label: 'Effect', text: AbilityLogic.getTextEffect(section.text, hero) } ];
+					case 'field':
+						return [ { label: section.name, text: AbilityLogic.getTextEffect(section.effect, hero) } ];
+					default:
+						return [];
+				}
+			});
+
+		return {
+			kind: 'ability',
+			details: {
+				name: customization?.name || props.ability.name,
+				description: customization?.description || props.ability.description,
+				type: FormatLogic.getAbilityType(props.ability.type),
+				cost: props.ability.cost === 'signature' ? 'Signature' : props.ability.cost.toString(),
+				distance: props.ability.distance
+					.map(distance => AbilityLogic.getDistanceCreature(distance, props.ability, creature))
+					.join(' or '),
+				target: props.ability.target,
+				trigger: props.ability.type.trigger,
+				keywords: AbilityLogic.getKeywords(props.ability, hero),
+				sections: sections,
+				tiers: rollSection ?
+					[
+						{
+							tier: 1,
+							text: AbilityLogic.getTierEffectCreature(rollSection.roll.tier1, 1, props.ability, undefined, creature)
+						},
+						{
+							tier: 2,
+							text: AbilityLogic.getTierEffectCreature(rollSection.roll.tier2, 2, props.ability, undefined, creature)
+						},
+						{
+							tier: 3,
+							text: AbilityLogic.getTierEffectCreature(rollSection.roll.tier3, 3, props.ability, undefined, creature)
+						}
+					]
+					: undefined
+			}
+		};
+	};
+
 	const getContent = () => {
 		switch (page) {
 			case 'Ability Card': {
@@ -217,6 +269,9 @@ export const AbilityModal = (props: Props) => {
 									]}
 									rollState={rollState}
 									hero={null}
+									actorName={actorName}
+									rollLabel={props.ability.name}
+									rollContext={getRollContext()}
 									onRollStateChange={setRollState}
 									onRoll={setTier}
 								/>

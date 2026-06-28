@@ -1,4 +1,5 @@
 import { Alert, Button, Drawer, Flex, Segmented, Slider, Statistic } from 'antd';
+import { ForgeSteelRollContext, OwlbearBridge } from '@/integrations/owlbear-bridge';
 import { ReactNode, useState } from 'react';
 import { BarChartOutlined } from '@ant-design/icons';
 import { Collections } from '@/utils/collections';
@@ -14,11 +15,16 @@ import { RollState } from '@/enums/roll-state';
 
 import './die-roll-panel.scss';
 
+type PowerRollTier = 1 | 2 | 3;
+
 interface Props {
 	type: 'Power Roll' | 'Saving Throw';
 	modifiers: number[];
 	rollState: RollState;
 	hero: Hero | null;
+	actorName?: string;
+	rollLabel?: string;
+	rollContext?: ForgeSteelRollContext;
 	onRollStateChange: (value: RollState) => void;
 	onRoll?: (tier: number) => void;
 }
@@ -39,34 +45,101 @@ export const DieRollPanel = (props: Props) => {
 				break;
 		}
 
+		const total = getTotal(rolls, props.rollState);
+		const baseTier = props.type === 'Power Roll' ? getBasePowerRollTier(total) : undefined;
+		const tier = props.type === 'Power Roll' ? getPowerRollTier(total, props.rollState) : undefined;
+
 		setTierResult(rolls, props.rollState);
 		setResults(rolls);
+		OwlbearBridge.sendRollResult({
+			actorName: props.actorName || props.hero?.name || 'Forge Steel',
+			label: props.rollLabel || props.type,
+			formula: getFormula(props.type, props.modifiers, props.rollState),
+			total: total,
+			naturalTotal: getNaturalTotal(rolls),
+			tier: tier,
+			baseTier: baseTier,
+			rollState: props.rollState,
+			breakdown: getBreakdown(rolls, props.rollState),
+			context: props.rollContext
+		});
 	};
 
 	const setTierResult = (rolls: number[], rollState: RollState) => {
 		if (props.onRoll) {
-			let tier;
-
-			const total = Collections.sum([ ...rolls, ...props.modifiers, RollLogic.getBonus(rollState) ], r => r);
-			if (total <= 11) {
-				tier = 1;
-			} else if (total <= 16) {
-				tier = 2;
-			} else {
-				tier = 3;
-			}
-
-			switch (rollState) {
-				case RollState.DoubleBane:
-					tier = Math.max(1, tier - 1);
-					break;
-				case RollState.DoubleEdge:
-					tier = Math.min(3, tier + 1);
-					break;
-			}
-
-			props.onRoll(tier);
+			const total = getTotal(rolls, rollState);
+			props.onRoll(getPowerRollTier(total, rollState));
 		}
+	};
+
+	const getNaturalTotal = (rolls: number[]) => {
+		return Collections.sum(rolls, r => r);
+	};
+
+	const getTotal = (rolls: number[], rollState: RollState) => {
+		return Collections.sum([ ...rolls, ...props.modifiers, RollLogic.getBonus(rollState, props.type) ], r => r);
+	};
+
+	const getBasePowerRollTier = (total: number): PowerRollTier => {
+		if (total <= 11) {
+			return 1;
+		}
+
+		if (total <= 16) {
+			return 2;
+		}
+
+		return 3;
+	};
+
+	const getPowerRollTier = (total: number, rollState: RollState): PowerRollTier => {
+		const tier = getBasePowerRollTier(total);
+
+		switch (rollState) {
+			case RollState.DoubleBane:
+				return Math.max(1, tier - 1) as PowerRollTier;
+			case RollState.DoubleEdge:
+				return Math.min(3, tier + 1) as PowerRollTier;
+		}
+
+		return tier;
+	};
+
+	const getFormula = (type: 'Power Roll' | 'Saving Throw', modifiers: number[], rollState: RollState) => {
+		const dice = type === 'Power Roll' ? '2d10' : '1d10';
+		const parts = [
+			...modifiers,
+			RollLogic.getBonus(rollState, type)
+		].filter(part => part !== 0);
+
+		if (parts.length === 0) {
+			return dice;
+		}
+
+		return [
+			dice,
+			...parts.map(part => `${part > 0 ? '+' : '-'} ${Math.abs(part)}`)
+		].join(' ');
+	};
+
+	const getBreakdown = (rolls: number[], rollState: RollState) => {
+		const parts = [
+			...rolls.map(roll => roll.toString()),
+			...props.modifiers
+				.filter(modifier => modifier !== 0)
+				.map(modifier => `${modifier >= 0 ? '+' : '-'} ${Math.abs(modifier)}`)
+		];
+
+		const bonus = RollLogic.getBonus(rollState, props.type);
+		if (bonus !== 0) {
+			parts.push(`${bonus >= 0 ? '+' : '-'} ${Math.abs(bonus)} ${bonus > 0 ? 'edge' : 'bane'}`);
+		}
+
+		const rollStateNote = props.type === 'Power Roll' && rollState !== RollState.Standard
+			? ` (${rollState})`
+			: '';
+
+		return `${parts.join(' ')} = ${getTotal(rolls, rollState)}${rollStateNote}`;
 	};
 
 	const getTierMessage = (rollState: RollState, type: string = 'Power Roll') => {
