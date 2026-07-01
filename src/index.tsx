@@ -1,3 +1,4 @@
+import { cleanupStaleServiceWorkers, isOwlbearBridgeMode, reloadAfterServiceWorkerCleanup } from '@/integrations/service-worker-cleanup';
 import { DataLoader } from '@/components/panels/data-loader/data-loader';
 import { DataManagerProvider } from './contexts/data-context';
 import { ErrorBoundary } from '@/components/controls/error-boundary/error-boundary';
@@ -15,9 +16,25 @@ initializeTheme();
 // Register Service Worker for PWA functionality
 if ('serviceWorker' in navigator) {
 	window.addEventListener('load', () => {
-		navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`)
-			.catch(registrationError => {
-				console.error('SW registration failed: ', registrationError);
+		const bridgeMode = isOwlbearBridgeMode();
+
+		cleanupStaleServiceWorkers({ includeCurrentScope: bridgeMode })
+			.then(cleaned => {
+				if (cleaned && reloadAfterServiceWorkerCleanup()) {
+					return;
+				}
+
+				if (bridgeMode) {
+					return;
+				}
+
+				return navigator.serviceWorker.register(
+					`${import.meta.env.BASE_URL}sw.js`,
+					{ scope: import.meta.env.BASE_URL }
+				);
+			})
+			.catch(error => {
+				console.error('SW registration failed: ', error);
 			});
 	});
 }
