@@ -1,5 +1,6 @@
 import { Alert, Button, Divider, Flex, InputNumber, Popover, Segmented, Space, Tag } from 'antd';
 import { ConditionEndType, ConditionType } from '@/enums/condition-type';
+import { useEffect, useState } from 'react';
 import { Collections } from '@/utils/collections';
 import { Condition } from '@/models/condition';
 import { ConditionPanel } from '@/components/panels/condition/condition-panel';
@@ -24,7 +25,6 @@ import { NumberSpin } from '@/components/controls/number-spin/number-spin';
 import { PanelMode } from '@/enums/panel-mode';
 import { PlusOutlined } from '@ant-design/icons';
 import { Utils } from '@/utils/utils';
-import { useState } from 'react';
 
 import './health-panel.scss';
 
@@ -36,6 +36,10 @@ interface HeroProps {
 
 export const HeroHealthPanel = (props: HeroProps) => {
 	const [ hero, setHero ] = useState<Hero>(Utils.copy(props.hero));
+
+	useEffect(() => {
+		setHero(Utils.copy(props.hero));
+	}, [ props.hero ]);
 
 	const setStaminaDamage = (value: number) => {
 		const copy = Utils.copy(hero);

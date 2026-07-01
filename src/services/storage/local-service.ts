@@ -43,13 +43,13 @@ export class LocalService implements StorageService {
 			const copy = Utils.copy(heroes);
 			if (heroes.some(h => h.id === hero.id)) {
 				const list = copy.map(h => h.id === hero.id ? hero : h);
-				localforage.setItem<Hero[]>(DataStorageKeys.Heroes, list);
+				await localforage.setItem<Hero[]>(DataStorageKeys.Heroes, list);
 			} else {
 				copy.push(hero);
-				localforage.setItem<Hero[]>(DataStorageKeys.Heroes, copy);
+				await localforage.setItem<Hero[]>(DataStorageKeys.Heroes, copy);
 			}
 		} else {
-			localforage.setItem<Hero[]>(DataStorageKeys.Heroes, [ hero ]);
+			await localforage.setItem<Hero[]>(DataStorageKeys.Heroes, [ hero ]);
 		}
 
 		return hero;
@@ -59,7 +59,7 @@ export class LocalService implements StorageService {
 		const heroes = await localforage.getItem<Hero[]>(DataStorageKeys.Heroes);
 		if (heroes) {
 			const copy = Utils.copy(heroes.filter(h => h.id !== id));
-			localforage.setItem<Hero[]>(DataStorageKeys.Heroes, copy);
+			await localforage.setItem<Hero[]>(DataStorageKeys.Heroes, copy);
 		}
 	}
 	// #endregion
@@ -90,13 +90,13 @@ export class LocalService implements StorageService {
 			const copy = Utils.copy(sourcebooks);
 			if (sourcebooks.some(h => h.id === sourcebook.id)) {
 				const list = copy.map(h => h.id === sourcebook.id ? sourcebook : h);
-				localforage.setItem<Sourcebook[]>(DataStorageKeys.Sourcebooks, list);
+				await localforage.setItem<Sourcebook[]>(DataStorageKeys.Sourcebooks, list);
 			} else {
 				copy.push(sourcebook);
-				localforage.setItem<Sourcebook[]>(DataStorageKeys.Sourcebooks, copy);
+				await localforage.setItem<Sourcebook[]>(DataStorageKeys.Sourcebooks, copy);
 			}
 		} else {
-			localforage.setItem<Sourcebook[]>(DataStorageKeys.Sourcebooks, [ sourcebook ]);
+			await localforage.setItem<Sourcebook[]>(DataStorageKeys.Sourcebooks, [ sourcebook ]);
 		}
 
 		return sourcebook;
@@ -106,7 +106,7 @@ export class LocalService implements StorageService {
 		const sourcebooks = await localforage.getItem<Sourcebook[]>(DataStorageKeys.Sourcebooks);
 		if (sourcebooks) {
 			const copy = Utils.copy(sourcebooks.filter(h => h.id !== id));
-			localforage.setItem<Sourcebook[]>(DataStorageKeys.Sourcebooks, copy);
+			await localforage.setItem<Sourcebook[]>(DataStorageKeys.Sourcebooks, copy);
 		}
 	}
 	// #endregion

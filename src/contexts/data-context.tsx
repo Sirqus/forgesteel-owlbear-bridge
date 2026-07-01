@@ -1,8 +1,9 @@
-import { ActionDispatch, PropsWithChildren, createContext, useContext, useReducer } from 'react';
+import { ActionDispatch, PropsWithChildren, createContext, useContext, useEffect, useReducer } from 'react';
 import { Analytics } from '@/utils/analytics';
 import { Collections } from '@/utils/collections';
 import { DataService } from '@/services/data-service';
 import { Hero } from '@/models/hero';
+import { HeroSyncChannel } from '@/integrations/hero-sync-channel';
 import { Options } from '@/models/options';
 import { Session } from '@/models/session';
 import { Sourcebook } from '@/models/sourcebook';
@@ -69,8 +70,10 @@ export class DataManager {
 			.then(hero => {
 				this.heroDispatch({
 					type: ReducerActionKind.UPDATE,
-					payload: hero
+					payload: hero,
+					source: ReducerActionSource.LOCAL
 				});
+				HeroSyncChannel.broadcastHeroUpdated(hero);
 			});
 	}
 
@@ -79,8 +82,10 @@ export class DataManager {
 			.then(() => {
 				this.heroDispatch({
 					type: ReducerActionKind.DELETE,
-					payload: hero
+					payload: hero,
+					source: ReducerActionSource.LOCAL
 				});
+				HeroSyncChannel.broadcastHeroDeleted(hero.id);
 			});
 	}
 
@@ -110,9 +115,15 @@ enum ReducerActionKind {
 	DELETE = 'Delete'
 }
 
+enum ReducerActionSource {
+	LOCAL = 'Local',
+	SYNC = 'Sync'
+}
+
 interface ReducerAction<T> {
 	type: ReducerActionKind;
 	payload: T;
+	source?: ReducerActionSource;
 }
 
 interface DataManagerProps {
@@ -147,6 +158,27 @@ export function DataManagerProvider(props: PropsWithChildren<DataManagerProps>) 
 		sourcebooks: sourcebookDispatch
 	});
 
+	useEffect(() => {
+		return HeroSyncChannel.listen(event => {
+			switch (event.kind) {
+				case 'updated':
+					heroDispatch({
+						type: ReducerActionKind.UPDATE,
+						payload: event.hero,
+						source: ReducerActionSource.SYNC
+					});
+					break;
+				case 'deleted':
+					heroDispatch({
+						type: ReducerActionKind.DELETE,
+						payload: { id: event.heroId } as Hero,
+						source: ReducerActionSource.SYNC
+					});
+					break;
+			}
+		});
+	}, []);
+
 	function UpdateOnlyReducer<T>(_oldState: T, action: ReducerAction<T>) {
 		switch (action.type) {
 			case ReducerActionKind.UPDATE: {
@@ -165,12 +197,16 @@ export function DataManagerProvider(props: PropsWithChildren<DataManagerProps>) 
 				const hero = action.payload;
 				const copy = Utils.copy(currentHeroes);
 				if (currentHeroes.some(h => h.id === hero.id)) {
-					Analytics.logHeroEdited(hero);
+					if (action.source !== ReducerActionSource.SYNC) {
+						Analytics.logHeroEdited(hero);
+					}
 
 					const list = copy.map(h => h.id === hero.id ? hero : h);
 					newHeroes = list;
 				} else {
-					Analytics.logHeroCreated(hero);
+					if (action.source !== ReducerActionSource.SYNC) {
+						Analytics.logHeroCreated(hero);
+					}
 
 					copy.push(hero);
 					Collections.sort(copy, h => h.name);
