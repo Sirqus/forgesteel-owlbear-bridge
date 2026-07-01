@@ -77,3 +77,16 @@ The deployed app URL is:
 ```
 https://sirqus.github.io/forgesteel-owlbear-bridge/
 ```
+
+## Google Drive Hero Sync
+
+Google Drive hero sync is optional. If `VITE_GOOGLE_CLIENT_ID` is not set, Forge Steel keeps using local browser storage and the Google Drive sync button shows as unconfigured.
+
+To enable it on GitHub Pages:
+
+1. Create a Google OAuth web client.
+2. Add `https://sirqus.github.io` as an authorized JavaScript origin.
+3. Add the client ID as a repository secret named `GOOGLE_CLIENT_ID`.
+4. Redeploy the `Deploy GitHub Pages` workflow.
+
+The sync stores hero data in the user's Google Drive `appDataFolder` using the `drive.appdata` scope. Local saves remain instant; Google Drive sync runs after sign-in, on hero changes, on focus, and on a short polling interval while the app is open.

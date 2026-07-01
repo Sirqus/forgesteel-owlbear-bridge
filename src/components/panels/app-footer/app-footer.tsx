@@ -4,6 +4,7 @@ import { ButtonConfig, ButtonGroup } from '@/components/controls/button-group/bu
 import { useDataManager, useOptions } from '@/contexts/data-context';
 import { ConnectionSettings } from '@/models/connection-settings';
 import { ErrorBoundary } from '@/components/controls/error-boundary/error-boundary';
+import { GoogleDriveSyncStatus } from '@/components/panels/google-drive-sync/google-drive-sync-status';
 import { Modal } from '@/components/modals/modal/modal';
 import { Options } from '@/models/options';
 import { SyncStatus } from '@/components/panels/sync-status/sync-status';
@@ -97,6 +98,7 @@ export const AppFooter = (props: Props) => {
 				}
 				<Space>
 					<SyncStatus />
+					<GoogleDriveSyncStatus />
 					{
 						options.showDataSource && props.params.connectionSettings.dataSource && !isSmall ?
 							<Tag

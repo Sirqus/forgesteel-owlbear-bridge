@@ -1,0 +1,25 @@
+.google-drive-sync-status {
+	&.google-drive-sync-synced {
+		color: rgb(23, 125, 73);
+	}
+
+	&.google-drive-sync-syncing,
+	&.google-drive-sync-signing-in {
+		color: rgb(22, 119, 255);
+	}
+
+	&.google-drive-sync-error,
+	&.google-drive-sync-offline,
+	&.google-drive-sync-unconfigured {
+		color: rgb(128, 0, 0);
+	}
+}
+
+.google-drive-sync-popover {
+	width: 280px;
+
+	.sync-message {
+		color: rgb(100, 100, 100);
+		font-size: 12px;
+	}
+}

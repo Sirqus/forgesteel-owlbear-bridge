@@ -2,6 +2,7 @@ import { ActionDispatch, PropsWithChildren, createContext, useContext, useEffect
 import { Analytics } from '@/utils/analytics';
 import { Collections } from '@/utils/collections';
 import { DataService } from '@/services/data-service';
+import { GoogleDriveHeroSync } from '@/services/sync/google-drive-hero-sync';
 import { Hero } from '@/models/hero';
 import { HeroSyncChannel } from '@/integrations/hero-sync-channel';
 import { Options } from '@/models/options';
@@ -74,6 +75,7 @@ export class DataManager {
 					source: ReducerActionSource.LOCAL
 				});
 				HeroSyncChannel.broadcastHeroUpdated(hero);
+				void GoogleDriveHeroSync.recordLocalHeroSaved(hero);
 			});
 	}
 
@@ -86,6 +88,7 @@ export class DataManager {
 					source: ReducerActionSource.LOCAL
 				});
 				HeroSyncChannel.broadcastHeroDeleted(hero.id);
+				void GoogleDriveHeroSync.recordLocalHeroDeleted(hero.id);
 			});
 	}
 
@@ -157,6 +160,26 @@ export function DataManagerProvider(props: PropsWithChildren<DataManagerProps>) 
 		hero: heroDispatch,
 		sourcebooks: sourcebookDispatch
 	});
+
+	useEffect(() => {
+		GoogleDriveHeroSync.configure({
+			dataService,
+			onHeroUpdated: hero => {
+				heroDispatch({
+					type: ReducerActionKind.UPDATE,
+					payload: hero,
+					source: ReducerActionSource.SYNC
+				});
+			},
+			onHeroDeleted: heroId => {
+				heroDispatch({
+					type: ReducerActionKind.DELETE,
+					payload: { id: heroId } as Hero,
+					source: ReducerActionSource.SYNC
+				});
+			}
+		});
+	}, [ dataService ]);
 
 	useEffect(() => {
 		return HeroSyncChannel.listen(event => {

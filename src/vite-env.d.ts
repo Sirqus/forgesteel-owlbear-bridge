@@ -3,6 +3,7 @@
 interface ImportMetaEnv {
 	// API Configuration
 	readonly VITE_PATREON_TOKEN_HANDLER_HOST: string;
+	readonly VITE_GOOGLE_CLIENT_ID: string;
 }
 
 interface ImportMeta {
