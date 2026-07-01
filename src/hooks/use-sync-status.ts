@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 
+const APP_BASE = import.meta.env.BASE_URL;
+const OFFLINE_CACHE_NAME = 'forgesteel-offline-v1';
+const offlineCacheUrl = (path: string) => `${APP_BASE}${path.replace(/^\/+/g, '')}`;
+const OFFLINE_CACHE_URLS = [
+	offlineCacheUrl(''),
+	offlineCacheUrl('index.html'),
+	offlineCacheUrl('manifest.json')
+];
+
 export interface SyncStatus {
 	isSynced: boolean;
 	isSyncing: boolean;
@@ -41,18 +50,18 @@ export const useSyncStatus = () => {
 	const checkSyncStatus = useCallback(async () => {
 		if ('serviceWorker' in navigator && 'caches' in window) {
 			try {
-				const cache = await caches.open('forgesteel-v1');
+				const cache = await caches.open(OFFLINE_CACHE_NAME);
 				const keys = await cache.keys();
 
 				// Check if we have the essential files cached
 				const hasIndex = keys.some(request =>
-					request.url.includes('/index.html')
+					request.url.includes(offlineCacheUrl('index.html'))
 				);
 				const hasManifest = keys.some(request =>
-					request.url.includes('/manifest.json')
+					request.url.includes(offlineCacheUrl('manifest.json'))
 				);
 				const hasAssets = keys.some(request =>
-					request.url.includes('/assets/')
+					request.url.includes(offlineCacheUrl('assets/'))
 				);
 
 				const isSynced = hasIndex && hasManifest && hasAssets;
@@ -87,16 +96,9 @@ export const useSyncStatus = () => {
 			}));
 
 			try {
-				const cache = await caches.open('forgesteel-v1');
+				const cache = await caches.open(OFFLINE_CACHE_NAME);
 
-				// Cache essential files
-				const urlsToCache = [
-					'/',
-					'/index.html',
-					'/manifest.json'
-				];
-
-				await cache.addAll(urlsToCache);
+				await cache.addAll(OFFLINE_CACHE_URLS);
 
 				// Cache current page and any loaded assets
 				const currentUrl = window.location.href;
